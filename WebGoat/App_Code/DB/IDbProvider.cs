@@ -47,6 +47,9 @@ namespace OWASP.WebGoat.NET.App_Code.DB
 
         DataSet GetEmailByName(string name);
 
+        // Secure version of GetEmailByName method
+        DataSet GetEmailByNameSecure(string name);
+
         string GetEmailByCustomerNumber(string num);
 
         DataSet GetCustomerEmails(string email);

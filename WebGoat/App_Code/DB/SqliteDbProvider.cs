@@ -312,6 +312,7 @@ namespace OWASP.WebGoat.NET.App_Code.DB
 
         public string[] GetSecurityQuestionAndAnswer(string email)
         {
+            // VULNERABLE: SQL injection vulnerability - email parameter concatenated directly into query
             string sql = "select SecurityQuestions.question_text, CustomerLogin.answer from CustomerLogin, " + 
                 "SecurityQuestions where CustomerLogin.email = '" + email + "' and CustomerLogin.question_id = " +
                 "SecurityQuestions.question_id;";
@@ -323,6 +324,41 @@ namespace OWASP.WebGoat.NET.App_Code.DB
                 connection.Open();
 
                 SqliteDataAdapter da = new SqliteDataAdapter(sql, connection);
+                
+                DataSet ds = new DataSet();
+                da.Fill(ds);
+
+                if (ds.Tables[0].Rows.Count > 0)
+                {
+                    DataRow row = ds.Tables[0].Rows[0];
+                    qAndA[0] = row[0].ToString();
+                    qAndA[1] = row[1].ToString();
+                }
+            }
+            
+            return qAndA;
+        }
+
+        // SECURE VERSION: Uses parameterized queries to prevent SQL injection
+        public string[] GetSecurityQuestionAndAnswerSecure(string email)
+        {
+            // Input validation
+            if (string.IsNullOrEmpty(email))
+                return new string[2];
+                
+            // Parameterized query prevents SQL injection
+            string sql = "select SecurityQuestions.question_text, CustomerLogin.answer from CustomerLogin, " + 
+                "SecurityQuestions where CustomerLogin.email = @email and CustomerLogin.question_id = " +
+                "SecurityQuestions.question_id;";
+                
+            string[] qAndA = new string[2];
+            
+            using (SqliteConnection connection = new SqliteConnection(_connectionString))
+            {
+                connection.Open();
+
+                SqliteDataAdapter da = new SqliteDataAdapter(sql, connection);
+                da.SelectCommand.Parameters.AddWithValue("@email", email);
                 
                 DataSet ds = new DataSet();
                 da.Fill(ds);
@@ -523,6 +559,7 @@ namespace OWASP.WebGoat.NET.App_Code.DB
 
         public DataSet GetEmailByName(string name)
         {
+            // VULNERABLE: SQL injection vulnerability - user input concatenated directly into query
             string sql = "select firstName, lastName, email from Employees where firstName like '" + name + "%' or lastName like '" + name + "%'";
             
             
@@ -531,6 +568,33 @@ namespace OWASP.WebGoat.NET.App_Code.DB
                 connection.Open();
 
                 SqliteDataAdapter da = new SqliteDataAdapter(sql, connection);
+                DataSet ds = new DataSet();
+                da.Fill(ds);
+
+                if (ds.Tables[0].Rows.Count == 0)
+                    return null;
+                else
+                    return ds;
+            }
+        }
+
+        // SECURE VERSION: Uses parameterized queries to prevent SQL injection
+        public DataSet GetEmailByNameSecure(string name)
+        {
+            // Input validation
+            if (string.IsNullOrEmpty(name))
+                return new DataSet();
+                
+            // Parameterized query prevents SQL injection
+            string sql = "select firstName, lastName, email from Employees where firstName like @name || '%' or lastName like @name || '%'";
+            
+            using (SqliteConnection connection = new SqliteConnection(_connectionString))
+            {
+                connection.Open();
+
+                SqliteDataAdapter da = new SqliteDataAdapter(sql, connection);
+                da.SelectCommand.Parameters.AddWithValue("@name", name);
+                
                 DataSet ds = new DataSet();
                 da.Fill(ds);
 
