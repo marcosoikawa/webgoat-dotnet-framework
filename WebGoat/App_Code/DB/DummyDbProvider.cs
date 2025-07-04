@@ -111,6 +111,11 @@ namespace OWASP.WebGoat.NET.App_Code.DB
             return null;
         }
 
+        public DataSet GetEmailByNameSecure(string name)
+        {
+            return null;
+        }
+
         public string GetEmailByCustomerNumber(string num)
         {
             return string.Empty;

@@ -514,12 +514,38 @@ namespace OWASP.WebGoat.NET.App_Code.DB
 
         public DataSet GetEmailByName(string name)
         {
+            // VULNERABLE: SQL injection vulnerability - user input concatenated directly into query
             string sql = "select firstName, lastName, email from Employees where firstName like '" + name + "%' or lastName like '" + name + "%'";
             
             
             using (MySqlConnection connection = new MySqlConnection(_connectionString))
             {
                 MySqlDataAdapter da = new MySqlDataAdapter(sql, connection);
+                DataSet ds = new DataSet();
+                da.Fill(ds);
+
+                if (ds.Tables[0].Rows.Count == 0)
+                    return null;
+                else
+                    return ds;
+            }
+        }
+
+        // SECURE VERSION: Uses parameterized queries to prevent SQL injection
+        public DataSet GetEmailByNameSecure(string name)
+        {
+            // Input validation
+            if (string.IsNullOrEmpty(name))
+                return new DataSet();
+                
+            // Parameterized query prevents SQL injection
+            string sql = "select firstName, lastName, email from Employees where firstName like CONCAT(@name, '%') or lastName like CONCAT(@name, '%')";
+            
+            using (MySqlConnection connection = new MySqlConnection(_connectionString))
+            {
+                MySqlDataAdapter da = new MySqlDataAdapter(sql, connection);
+                da.SelectCommand.Parameters.AddWithValue("@name", name);
+                
                 DataSet ds = new DataSet();
                 da.Fill(ds);
 
